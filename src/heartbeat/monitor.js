@@ -1,5 +1,5 @@
-const { EventEmitter } = require('events');
-const authFilter = require('../auth/cuckooFilter');
+import { EventEmitter } from 'events';
+import authFilter from '../auth/cuckooFilter';
 
 class HeartbeatMonitor extends EventEmitter {
   constructor(timeoutInterval = 30000) {
@@ -58,4 +58,4 @@ class HeartbeatMonitor extends EventEmitter {
   }
 }
 
-module.exports = new HeartbeatMonitor();
+export default new HeartbeatMonitor();

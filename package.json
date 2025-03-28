@@ -2,14 +2,17 @@
   "name": "secure-mqtt-mfa",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "cbor-js": "^0.1.0",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "cuckoo-filter": "^1.1.4",

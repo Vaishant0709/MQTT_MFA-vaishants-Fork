@@ -1,4 +1,4 @@
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 class OneTimeKeyManager {
   constructor() {
@@ -59,4 +59,4 @@ class OneTimeKeyManager {
   }
 }
 
-module.exports = new OneTimeKeyManager();
+export default new OneTimeKeyManager();

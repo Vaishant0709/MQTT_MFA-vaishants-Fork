@@ -1,6 +1,8 @@
-const mqtt = require('mqtt');
-const SpeckCipher = require('../encryption/speck');
-require('dotenv').config();
+import mqtt from 'mqtt';
+import SpeckCipher from '../encryption/speck';
+import { config } from 'dotenv';
+
+config();
 
 class SecureMqttClient {
   constructor(deviceId, sessionKey) {
@@ -111,4 +113,4 @@ class SecureMqttClient {
   }
 }
 
-module.exports = SecureMqttClient;
+export default SecureMqttClient;

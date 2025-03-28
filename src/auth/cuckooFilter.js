@@ -1,10 +1,11 @@
-const { CuckooFilter } = require('cuckoo-filter');
-const crypto = require('crypto');
+import { CuckooFilter } from 'cuckoo-filter';
+import crypto from 'crypto';
 
 class AuthenticationFilter {
   constructor() {
     // Initialize with reasonable capacity and false positive rate
-    this.filter = new CuckooFilter(1000000, 0.01);
+    // Adjusted bucket size to 2 (a common default for cuckoo filters)
+    this.filter = new CuckooFilter(1000000, 2);
     this.deviceCredentials = new Map(); // Store additional device info
   }
 
@@ -49,4 +50,4 @@ class AuthenticationFilter {
   }
 }
 
-module.exports = new AuthenticationFilter();
+export default new AuthenticationFilter();

@@ -1,5 +1,5 @@
-const axios = require('axios');
-const SecureMqttClient = require('../mqtt/mqttClient');
+import axios from 'axios';
+import SecureMqttClient from '../mqtt/mqttClient';
 
 class DeviceSimulator {
   constructor(deviceId, secret, serverUrl = 'http://localhost:3000') {
@@ -103,4 +103,4 @@ class DeviceSimulator {
   }
 }
 
-module.exports = DeviceSimulator;
+export default DeviceSimulator;

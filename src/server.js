@@ -1,10 +1,10 @@
-const express = require('express');
-const cors = require('cors');
-const authFilter = require('./auth/cuckooFilter');
-const mfaService = require('./auth/mfaService');
-const heartbeatMonitor = require('./heartbeat/monitor');
-const mqttServer = require('./mqtt/mqttServer');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import authFilter from './auth/cuckooFilter.js';
+import mfaService from './auth/mfaService.js';
+import heartbeatMonitor from './heartbeat/monitor.js';
+import mqttServer from './mqtt/mqttServer.js';
+import 'dotenv/config';
 
 const app = express();
 const PORT = process.env.SERVER_PORT || 3000;

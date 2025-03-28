@@ -1,4 +1,4 @@
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 class SpeckCipher {
   constructor(key) {
@@ -35,4 +35,4 @@ class SpeckCipher {
   }
 }
 
-module.exports = SpeckCipher;
+export default SpeckCipher;

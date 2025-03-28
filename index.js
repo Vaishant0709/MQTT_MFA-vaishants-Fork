@@ -1,6 +1,6 @@
-require('dotenv').config();
-const server = require('./src/server');
-const DeviceSimulator = require('./src/utils/deviceSimulator');
+import 'dotenv/config';
+import server from './src/server';
+import DeviceSimulator from './src/utils/deviceSimulator';
 
 // For demonstration, create and register a test device
 async function runTestDevice() {

@@ -1,7 +1,9 @@
-const mqtt = require('mqtt');
-const SpeckCipher = require('../encryption/speck');
-const heartbeatMonitor = require('../heartbeat/monitor');
-require('dotenv').config();
+import mqtt from 'mqtt';
+import SpeckCipher from '../encryption/speck';
+import heartbeatMonitor from '../heartbeat/monitor';
+import { config } from 'dotenv';
+
+config();
 
 class MqttServer {
   constructor() {
@@ -87,4 +89,4 @@ class MqttServer {
   }
 }
 
-module.exports = new MqttServer();
+export default new MqttServer();

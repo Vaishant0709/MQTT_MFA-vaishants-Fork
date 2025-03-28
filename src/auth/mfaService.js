@@ -1,10 +1,11 @@
-const crypto = require('crypto');
-const { v4: uuidv4 } = require('uuid');
-const authFilter = require('./cuckooFilter');
-const otkManager = require('./otk');
-const SpeckCipher = require('../encryption/speck');
-const heartbeatMonitor = require('../heartbeat/monitor');
-require('dotenv').config();
+import crypto from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
+import authFilter from './cuckooFilter.js';
+import otkManager from './otk.js';
+import SpeckCipher from '../encryption/speck.js';
+import heartbeatMonitor from '../heartbeat/monitor.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const encryptionKey = process.env.ENCRYPTION_KEY || 'default_encryption_key';
 const cipher = new SpeckCipher(encryptionKey);
@@ -119,4 +120,4 @@ class MFAService {
   }
 }
 
-module.exports = new MFAService();
+export default new MFAService();
