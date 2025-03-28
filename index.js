@@ -1,6 +1,6 @@
 import 'dotenv/config';
-import server from './src/server';
-import DeviceSimulator from './src/utils/deviceSimulator';
+import * as server from './src/server.js';
+import DeviceSimulator from './src/utils/deviceSimulator.js';
 
 // For demonstration, create and register a test device
 async function runTestDevice() {

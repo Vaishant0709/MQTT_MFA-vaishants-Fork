@@ -1,5 +1,5 @@
 import mqtt from 'mqtt';
-import SpeckCipher from '../encryption/speck';
+import SpeckCipher from '../encryption/speck.js';
 import { config } from 'dotenv';
 
 config();

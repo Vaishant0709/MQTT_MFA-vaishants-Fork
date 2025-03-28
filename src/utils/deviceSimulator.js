@@ -1,5 +1,5 @@
 import axios from 'axios';
-import SecureMqttClient from '../mqtt/mqttClient';
+import SecureMqttClient from '../mqtt/mqttClient.js';
 
 class DeviceSimulator {
   constructor(deviceId, secret, serverUrl = 'http://localhost:3000') {

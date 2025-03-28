@@ -3,7 +3,7 @@ import cors from 'cors';
 import authFilter from './auth/cuckooFilter.js';
 import mfaService from './auth/mfaService.js';
 import heartbeatMonitor from './heartbeat/monitor.js';
-import mqttServer from './mqtt/mqttServer.js';
+import mqttServer from './mqtt/mqttSever.js';
 import 'dotenv/config';
 
 const app = express();
@@ -92,3 +92,4 @@ app.get('/api/devices/:deviceId/status', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+export default app;

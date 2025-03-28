@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import authFilter from '../auth/cuckooFilter';
+import authFilter from '../auth/cuckooFilter.js';
 
 class HeartbeatMonitor extends EventEmitter {
   constructor(timeoutInterval = 30000) {

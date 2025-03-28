@@ -1,6 +1,6 @@
 import mqtt from 'mqtt';
-import SpeckCipher from '../encryption/speck';
-import heartbeatMonitor from '../heartbeat/monitor';
+import SpeckCipher from '../encryption/speck.js';
+import heartbeatMonitor from '../heartbeat/monitor.js';
 import { config } from 'dotenv';
 
 config();
