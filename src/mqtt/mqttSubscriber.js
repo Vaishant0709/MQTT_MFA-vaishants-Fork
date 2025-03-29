@@ -1,10 +1,8 @@
 import mqtt from 'mqtt';
 import SpeckCipher from '../encryption/speck.js';
-import { config } from 'dotenv';
+import 'dotenv/config';
 
-config();
-
-class SecureMqttClient {
+class SecureMqttSubscriber {
   constructor(deviceId, sessionKey) {
     this.deviceId = deviceId;
     this.cipher = new SpeckCipher(sessionKey);
@@ -13,6 +11,7 @@ class SecureMqttClient {
     this.connected = false;
     this.heartbeatTopic = `device/${deviceId}/heartbeat`;
     this.brokerUrl = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
+    this.messageHandler = null;
   }
 
   connect(options = {}) {
@@ -20,60 +19,41 @@ class SecureMqttClient {
       // Connect to MQTT broker
       this.client = mqtt.connect(this.brokerUrl, {
         ...options,
-        clientId: `publisher_${this.deviceId}_${Date.now()}`
+        clientId: `subscriber_${this.deviceId}_${Date.now()}`
       });
 
       this.client.on('connect', () => {
-        console.log(`\x1b[35m📡 Publisher ${this.deviceId} connected to MQTT broker\x1b[0m`);
+        console.log(`\x1b[36m📡 Subscriber ${this.deviceId} connected to MQTT broker\x1b[0m`);
         this.connected = true;
         this._startHeartbeat();
         resolve(true);
       });
 
       this.client.on('error', (error) => {
-        console.error(`\x1b[31mMQTT connection error for publisher ${this.deviceId}:\x1b[0m`, error);
+        console.error(`\x1b[31mMQTT connection error for subscriber ${this.deviceId}:\x1b[0m`, error);
         reject(error);
       });
 
       this.client.on('message', (topic, message) => {
         try {
           const encryptedMessage = message.toString();
-          console.log(`\x1b[33mReceived encrypted message on ${topic}: ${encryptedMessage.substring(0, 40)}...\x1b[0m`);
+          console.log(`\x1b[33m📩 Received encrypted message on ${topic}: ${encryptedMessage.substring(0, 40)}...\x1b[0m`);
           
           // Decrypt the message
           const decryptedMessage = this.cipher.decrypt(encryptedMessage);
-          console.log(`\x1b[32mDecrypted message on ${topic}: ${decryptedMessage}\x1b[0m`);
-          // Handle the message here
+          const decryptedData = JSON.parse(decryptedMessage);
+          
+          console.log(`\x1b[32m🔓 Decrypted message on ${topic}:`, decryptedData, '\x1b[0m');
+          
+          // Pass to custom handler if exists
+          if (this.messageHandler) {
+            this.messageHandler(topic, decryptedData);
+          }
         } catch (error) {
           console.error('\x1b[31mFailed to decrypt message:\x1b[0m', error);
         }
       });
     });
-  }
-
-  publish(topic, message) {
-    if (!this.connected) {
-      throw new Error('Client not connected');
-    }
-    
-    try {
-      // Convert message to string if it's not already
-      const messageStr = typeof message === 'string' ? message : JSON.stringify(message);
-      
-      // Encrypt the message
-      const encryptedMessage = this.cipher.encrypt(messageStr);
-      
-      // Log the messages with visualization
-      console.log(`\x1b[35m📤 Publishing to ${topic}: ${messageStr.substring(0, 40)}...\x1b[0m`);
-      console.log(`\x1b[33m🔒 Encrypted message: ${encryptedMessage.substring(0, 40)}...\x1b[0m`);
-      
-      // Publish the encrypted message
-      this.client.publish(topic, encryptedMessage);
-      return true;
-    } catch (error) {
-      console.error('\x1b[31mFailed to publish message:\x1b[0m', error);
-      return false;
-    }
   }
 
   subscribe(topic) {
@@ -87,11 +67,15 @@ class SecureMqttClient {
           console.error(`\x1b[31mFailed to subscribe to ${topic}:\x1b[0m`, error);
           reject(error);
         } else {
-          console.log(`\x1b[35m👂 Subscribed to ${topic}\x1b[0m`);
+          console.log(`\x1b[36m👂 Subscribed to ${topic}\x1b[0m`);
           resolve(true);
         }
       });
     });
+  }
+
+  setMessageHandler(handler) {
+    this.messageHandler = handler;
   }
 
   disconnect() {
@@ -102,7 +86,7 @@ class SecureMqttClient {
     if (this.client && this.connected) {
       this.client.end();
       this.connected = false;
-      console.log(`\x1b[35m📡 Publisher ${this.deviceId} disconnected from MQTT broker\x1b[0m`);
+      console.log(`\x1b[36mSubscriber ${this.deviceId} disconnected from MQTT broker\x1b[0m`);
     }
   }
 
@@ -114,12 +98,13 @@ class SecureMqttClient {
         deviceId: this.deviceId,
         timestamp: Date.now(),
         status: 'online',
-        type: 'publisher'
+        type: 'subscriber'
       };
       
-      this.publish(this.heartbeatTopic, heartbeat);
+      const encryptedHeartbeat = this.cipher.encrypt(JSON.stringify(heartbeat));
+      this.client.publish(this.heartbeatTopic, encryptedHeartbeat);
     }, interval);
   }
 }
 
-export default SecureMqttClient;
+export default SecureMqttSubscriber;

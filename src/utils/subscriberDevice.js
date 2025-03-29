@@ -1,13 +1,15 @@
+// src/utils/subscriberDevice.js
 import axios from 'axios';
-import SecureMqttClient from '../mqtt/mqttClient.js';
+import SecureMqttSubscriber from '../mqtt/mqttSubscriber.js';
 
-class DeviceSimulator {
+class SubscriberDevice {
   constructor(deviceId, secret, serverUrl = 'http://localhost:3000') {
     this.deviceId = deviceId;
     this.secret = secret;
     this.serverUrl = serverUrl;
     this.mqttClient = null;
     this.sessionKey = null;
+    this.messageHandler = null;
   }
 
   async register() {
@@ -16,15 +18,15 @@ class DeviceSimulator {
         deviceId: this.deviceId,
         secret: this.secret,
         metadata: {
-          type: 'simulator',
+          type: 'subscriber',
           createdAt: new Date().toISOString()
         }
       });
       
-      console.log('Device registered:', response.data);
+      console.log('\x1b[36mSubscriber device registered:\x1b[0m', response.data);
       return response.data;
     } catch (error) {
-      console.error('Registration failed:', error.response?.data || error.message);
+      console.error('\x1b[31mSubscriber registration failed:\x1b[0m', error.response?.data || error.message);
       throw error;
     }
   }
@@ -37,7 +39,7 @@ class DeviceSimulator {
       });
       
       const { sessionId } = initResponse.data;
-      console.log('Authentication initiated with session:', sessionId);
+      console.log('\x1b[36mSubscriber authentication initiated with session:\x1b[0m', sessionId);
       
       // Step 2: Validate credentials (Factor 1)
       const credResponse = await axios.post(`${this.serverUrl}/api/auth/validate-credentials`, {
@@ -46,11 +48,11 @@ class DeviceSimulator {
       });
       
       if (!credResponse.data.success) {
-        throw new Error('Credential validation failed');
+        throw new Error('Subscriber credential validation failed');
       }
       
       const { otk } = credResponse.data;
-      console.log('Credentials validated, received OTK');
+      console.log('\x1b[36mSubscriber credentials validated, received OTK\x1b[0m');
       
       // Step 3: Validate OTK (Factor 2)
       const otkResponse = await axios.post(`${this.serverUrl}/api/auth/validate-otk`, {
@@ -59,15 +61,15 @@ class DeviceSimulator {
       });
       
       if (!otkResponse.data.success) {
-        throw new Error('OTK validation failed');
+        throw new Error('Subscriber OTK validation failed');
       }
       
-      console.log('Authentication successful!');
+      console.log('\x1b[36mSubscriber authentication successful!\x1b[0m');
       this.sessionKey = otkResponse.data.sessionKey;
-
+    
       return otkResponse.data;
     } catch (error) {
-      console.error('Authentication failed:', error.response?.data || error.message);
+      console.error('\x1b[31mSubscriber authentication failed:\x1b[0m', error.response?.data || error.message);
       throw error;
     }
   }
@@ -77,22 +79,32 @@ class DeviceSimulator {
       throw new Error('Must authenticate before connecting to MQTT');
     }
     
-    this.mqttClient = new SecureMqttClient(this.deviceId, this.sessionKey);
+    this.mqttClient = new SecureMqttSubscriber(this.deviceId, this.sessionKey);
     await this.mqttClient.connect();
     
-    // Subscribe to device-specific topics
-    await this.mqttClient.subscribe(`device/${this.deviceId}/commands`);
+    // Set message handler if one was provided
+    if (this.messageHandler) {
+      this.mqttClient.setMessageHandler(this.messageHandler);
+    }
     
-    console.log('Connected to MQTT broker with secure session');
+    console.log('\x1b[36mSubscriber connected to MQTT broker with secure session\x1b[0m');
   }
 
-  publishData(data) {
+  async subscribeToDevice(publisherDeviceId) {
     if (!this.mqttClient) {
       throw new Error('MQTT client not connected');
     }
     
-    const topic = `device/${this.deviceId}/data`;
-    return this.mqttClient.publish(topic, data);
+    const topic = `device/${publisherDeviceId}/data`;
+    await this.mqttClient.subscribe(topic);
+    console.log(`\x1b[36mSubscribed to publisher device data: ${publisherDeviceId}\x1b[0m`);
+  }
+
+  setMessageHandler(handler) {
+    this.messageHandler = handler;
+    if (this.mqttClient) {
+      this.mqttClient.setMessageHandler(handler);
+    }
   }
 
   disconnect() {
@@ -103,4 +115,4 @@ class DeviceSimulator {
   }
 }
 
-export default DeviceSimulator;
+export default SubscriberDevice;

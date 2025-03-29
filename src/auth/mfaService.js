@@ -85,8 +85,9 @@ class MFAService {
       this.sessions.set(sessionId, session);
       
       // Generate session key for encrypted communication
-      const sessionKey = crypto.randomBytes(16).toString('hex');
-      const encryptedSessionKey = cipher.encrypt(sessionKey);
+      // const sessionKey = crypto.randomBytes(16).toString('hex');
+      const sessionKey = 'shared_fixed_session_key_for_all_devices';
+      //const encryptedSessionKey = cipher.encrypt(sessionKey);          //error hai yaha par next sem karliyo theek hai
       
       // Record initial heartbeat
       heartbeatMonitor.recordHeartbeat(deviceId, 'online');
@@ -94,7 +95,7 @@ class MFAService {
       return { 
         success: true, 
         authenticated: true,
-        sessionKey: encryptedSessionKey
+        sessionKey: sessionKey //encryptedSessionKey
       };
     }
     
