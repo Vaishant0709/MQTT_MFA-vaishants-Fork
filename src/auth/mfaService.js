@@ -85,7 +85,8 @@ class MFAService {
       this.sessions.set(sessionId, session);
       
       // Generate session key for encrypted communication
-      // const sessionKey = crypto.randomBytes(16).toString('hex');
+
+      // const sessionKey = crypto.randomBytes(16).toString('hex');      //issko implement karna hai
       const sessionKey = 'shared_fixed_session_key_for_all_devices';
       //const encryptedSessionKey = cipher.encrypt(sessionKey);          //error hai yaha par next sem karliyo theek hai
       
