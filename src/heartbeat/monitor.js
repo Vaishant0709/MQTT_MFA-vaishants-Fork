@@ -42,6 +42,7 @@ class HeartbeatMonitor extends EventEmitter {
 
   _startMonitoring() {
     setInterval(() => {
+      // if (!global.enableLogging) return;
       const now = Date.now();
       console.log('\n\x1b[33m=== Device Status Check ===\x1b[0m');
       // for (const [deviceId, lastHeartbeat] of this.devices.entries()) {
