@@ -114,10 +114,12 @@ class SecureMqttClient {
         deviceId: this.deviceId,
         timestamp: Date.now(),
         status: 'online',
-        type: 'publisher'
+        type: 'publisher',
+        sequence: Math.floor(Math.random() * 1000)
       };
       
       this.publish(this.heartbeatTopic, heartbeat);
+      console.log(`\x1b[35m❤️  Sent heartbeat (seq: ${heartbeat.sequence})\x1b[0m`);
     }, interval);
   }
 }

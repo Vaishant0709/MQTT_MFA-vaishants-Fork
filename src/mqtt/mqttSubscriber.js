@@ -98,11 +98,13 @@ class SecureMqttSubscriber {
         deviceId: this.deviceId,
         timestamp: Date.now(),
         status: 'online',
-        type: 'subscriber'
+        type: 'subscriber',
+        sequence: Math.floor(Math.random() * 1000)
       };
       
       const encryptedHeartbeat = this.cipher.encrypt(JSON.stringify(heartbeat));
       this.client.publish(this.heartbeatTopic, encryptedHeartbeat);
+      console.log(`\x1b[36m❤️  Sent heartbeat (seq: ${heartbeat.sequence})\x1b[0m`);
     }, interval);
   }
 }
