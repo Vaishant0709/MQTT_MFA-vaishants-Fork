@@ -82,7 +82,7 @@ async function runSimulation() {
           }, 1000);
         }, 1000);
       }
-    }, 3000);
+    }, 10000);
     
     // Handle graceful shutdown
     process.on('SIGINT', () => {
