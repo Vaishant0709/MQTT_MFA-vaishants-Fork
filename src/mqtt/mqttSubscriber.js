@@ -23,34 +23,34 @@ class SecureMqttSubscriber {
       });
 
       this.client.on('connect', () => {
-        console.log(`\x1b[36m📡 Subscriber ${this.deviceId} connected to MQTT broker\x1b[0m`);
+        console.log(`\n\x1b[36m📡 Subscriber ${this.deviceId} connected to MQTT broker\x1b[0m`);
         this.connected = true;
         this._startHeartbeat();
         resolve(true);
       });
 
       this.client.on('error', (error) => {
-        console.error(`\x1b[31mMQTT connection error for subscriber ${this.deviceId}:\x1b[0m`, error);
+        console.error(`\n\x1b[31mMQTT connection error for subscriber ${this.deviceId}:\x1b[0m`, error);
         reject(error);
       });
 
       this.client.on('message', (topic, message) => {
         try {
           const encryptedMessage = message.toString();
-          console.log(`\x1b[33m📩 Received encrypted message on ${topic}: ${encryptedMessage.substring(0, 40)}...\x1b[0m`);
+          console.log(`\n\x1b[33m📩 Received encrypted message on ${topic}: ${encryptedMessage.substring(0, 40)}...\x1b[0m`);
           
           // Decrypt the message
           const decryptedMessage = this.cipher.decrypt(encryptedMessage);
           const decryptedData = JSON.parse(decryptedMessage);
           
-          console.log(`\x1b[32m🔓 Decrypted message on ${topic}:`, decryptedData, '\x1b[0m');
+          console.log(`\n\x1b[32m🔓 Decrypted message on ${topic}:`, decryptedData, '\x1b[0m');
           
           // Pass to custom handler if exists
           if (this.messageHandler) {
             this.messageHandler(topic, decryptedData);
           }
         } catch (error) {
-          console.error('\x1b[31mFailed to decrypt message:\x1b[0m', error);
+          console.error('\n\x1b[31mFailed to decrypt message:\x1b[0m', error);
         }
       });
     });
@@ -64,10 +64,10 @@ class SecureMqttSubscriber {
     return new Promise((resolve, reject) => {
       this.client.subscribe(topic, (error) => {
         if (error) {
-          console.error(`\x1b[31mFailed to subscribe to ${topic}:\x1b[0m`, error);
+          console.error(`\n\x1b[31mFailed to subscribe to ${topic}:\x1b[0m`, error);
           reject(error);
         } else {
-          console.log(`\x1b[36m👂 Subscribed to ${topic}\x1b[0m`);
+          console.log(`\n\x1b[36m👂 Subscribed to ${topic}\x1b[0m`);
           resolve(true);
         }
       });
@@ -86,7 +86,7 @@ class SecureMqttSubscriber {
     if (this.client && this.connected) {
       this.client.end();
       this.connected = false;
-      console.log(`\x1b[36mSubscriber ${this.deviceId} disconnected from MQTT broker\x1b[0m`);
+      console.log(`\n\x1b[36mSubscriber ${this.deviceId} disconnected from MQTT broker\x1b[0m`);
     }
   }
 

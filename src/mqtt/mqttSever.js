@@ -29,11 +29,11 @@ class MqttServer {
     });
 
     this.client.on('connect', () => {
-      console.log('\x1b[33m🔌 MQTT server connected to broker\x1b[0m');
+      console.log('\n\x1b[33m🔌 MQTT server connected to broker\x1b[0m');
       
       // Subscribe to all device heartbeats
       this.client.subscribe('device/+/heartbeat');
-      console.log('\x1b[33m👂 Listening for device heartbeats\x1b[0m');
+      console.log('\n\x1b[33m👂 Listening for device heartbeats\x1b[0m\n');
       
       // Start heartbeat status display
       this._startHeartbeatDashboard();
@@ -83,26 +83,26 @@ class MqttServer {
             // Record heartbeat
             heartbeatMonitor.recordHeartbeat(deviceId, heartbeatData.status);
           } catch (error) {
-            console.error(`\x1b[31m⚠️ Failed to process heartbeat from ${deviceId}:\x1b[0m`, error.message);
+            console.error(`\n\x1b[31m⚠️ Failed to process heartbeat from ${deviceId}:\x1b[0m`, error.message);
           }
         } else {
-          console.warn(`\x1b[33m⚠️ Received heartbeat from unauthenticated device ${deviceId}\x1b[0m`);
+          console.warn(`\n\x1b[33m⚠️ Received heartbeat from unauthenticated device ${deviceId}\x1b[0m`);
         }
       }
     });
 
     this.client.on('error', (error) => {
-      console.error('\x1b[31m🔥 MQTT server error:\x1b[0m', error);
+      console.error('\n\x1b[31m🔥 MQTT server error:\x1b[0m', error);
     });
 
     // Set up event listeners for device status changes with enhanced logging
     heartbeatMonitor.on('deviceOffline', (deviceId) => {
-      console.log(`\x1b[31m⚠️ Device ${deviceId} went OFFLINE\x1b[0m`);
+      console.log(`\n\x1b[31m⚠️ Device ${deviceId} went OFFLINE\x1b[0m`);
       // You could add notification logic here
     });
 
     heartbeatMonitor.on('deviceOnline', (deviceId) => {
-      console.log(`\x1b[32m✅ Device ${deviceId} came ONLINE\x1b[0m`);
+      console.log(`\n\x1b[32m✅ Device ${deviceId} came ONLINE\x1b[0m`);
     });
   }
 
@@ -141,14 +141,14 @@ class MqttServer {
         }
       }
       
-      console.log('\x1b[33m=================================================================\x1b[0m');
+      console.log('\x1b[33m=================================================================\x1b[0m\n');
     }, interval);
   }
 
   registerDeviceSession(deviceId, sessionKey) {
     const cipher = new SpeckCipher(sessionKey);
     this.deviceSessions.set(deviceId, { sessionKey, cipher });
-    console.log(`\x1b[32m🔒 Registered secure session for device ${deviceId}\x1b[0m`);
+    console.log(`\n\x1b[32m🔒 Registered secure session for device ${deviceId}\x1b[0m`);
   }
 
   sendMessageToDevice(deviceId, topic, message) {
@@ -162,7 +162,7 @@ class MqttServer {
     );
     
     this.client.publish(topic, encryptedMessage);
-    console.log(`\x1b[32m📤 Sent encrypted message to ${deviceId} on ${topic}\x1b[0m`);
+    console.log(`\n\x1b[32m📤 Sent encrypted message to ${deviceId} on ${topic}\x1b[0m`);
   }
   
   // Add method to get current heartbeat statistics

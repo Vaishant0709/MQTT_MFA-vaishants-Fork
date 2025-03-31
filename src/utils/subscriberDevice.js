@@ -23,7 +23,7 @@ class SubscriberDevice {
         }
       });
       
-      console.log('\x1b[36mSubscriber device registered:\x1b[0m', response.data);
+      console.log('\n\x1b[36mSubscriber device registered:\x1b[0m', response.data);
       return response.data;
     } catch (error) {
       console.error('\x1b[31mSubscriber registration failed:\x1b[0m', error.response?.data || error.message);
@@ -39,7 +39,7 @@ class SubscriberDevice {
       });
       
       const { sessionId } = initResponse.data;
-      console.log('\x1b[36mSubscriber authentication initiated with session:\x1b[0m', sessionId);
+      console.log('\n\x1b[36mSubscriber authentication initiated with session:\x1b[0m', sessionId);
       
       // Step 2: Validate credentials (Factor 1)
       const credResponse = await axios.post(`${this.serverUrl}/api/auth/validate-credentials`, {
@@ -87,7 +87,7 @@ class SubscriberDevice {
       this.mqttClient.setMessageHandler(this.messageHandler);
     }
     
-    console.log('\x1b[36mSubscriber connected to MQTT broker with secure session\x1b[0m');
+    console.log('\x1b[36mSubscriber connected to MQTT broker with secure session\x1b[0m\n');
   }
 
   async subscribeToDevice(publisherDeviceId) {

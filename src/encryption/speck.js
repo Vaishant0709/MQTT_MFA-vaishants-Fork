@@ -14,7 +14,7 @@ class SpeckCipher {
     this.key = keyBytes.slice(0, 16);
     
     // Debug output
-    console.log(`\x1b[33mCipher initialized with key fingerprint: ${this.key.toString('hex').substring(0, 8)}...\x1b[0m`);
+    console.log(`\n\x1b[33mCipher initialized with key fingerprint: ${this.key.toString('hex').substring(0, 8)}...\x1b[0m`);
   }
 
   encrypt(plaintext) {
