@@ -42,6 +42,12 @@ class SecureMqttSubscriber {
           // Decrypt the message
           const decryptedMessage = this.cipher.decrypt(encryptedMessage);
           const decryptedData = JSON.parse(decryptedMessage);
+
+          const allowedDelay=5000;//5 seconds
+          if(Date.now()-decryptedData.timestamp>allowedDelay){
+            console.warn(`\n\x1b[33m⚠️  Warning: Message on ${topic} is delayed by more than ${allowedDelay} ms\x1b[0m`);
+            return; //ignore delayed message
+          }
           
           console.log(`\n\x1b[32m🔓 Decrypted message on ${topic}:`, decryptedData, '\x1b[0m');
           
