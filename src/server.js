@@ -5,7 +5,8 @@ import mfaService from './auth/mfaService.js';
 import heartbeatMonitor from './heartbeat/monitor.js';
 import mqttServer from './mqtt/mqttSever.js';
 import 'dotenv/config';
-
+import { logMetric } from './utils/metricLogger.js';
+import { performance } from 'perf_hooks';
 const app = express();
 const PORT = process.env.SERVER_PORT || 0;
 
@@ -49,15 +50,29 @@ app.post('/api/auth/initiate', (req, res) => {
 // Step 2: Validate credentials (Factor 1)
 app.post('/api/auth/validate-credentials', async (req, res) => {
   const { sessionId, secret } = req.body;
-  
+  // 
+  const start = performance.now();
   if (!sessionId || !secret) {
     return res.status(400).json({ error: 'Session ID and secret are required' });
   }
   
   try {
     const result = await mfaService.validateCredentials(sessionId, secret);
+    // Log metric based on success or failure
+    if (result.success === false) {
+       const end = performance.now();
+       // [NEW] Log the failed attempt
+       logMetric('AUTH', 'Login_Attempt', (end - start).toFixed(3), 'Failed_Credential');
+    } else {
+       const end = performance.now();
+       logMetric('AUTH', 'Login_Attempt', (end - start).toFixed(3), 'Success');
+    }
     res.json(result);
   } catch (error) {
+    const end = performance.now();
+    // [NEW] Log errors (like Cuckoo filter rejection)
+    logMetric('AUTH', 'Login_Attempt', (end - start).toFixed(3), 'Blocked_BruteForce');
+    
     res.status(400).json({ error: error.message });
   }
 });

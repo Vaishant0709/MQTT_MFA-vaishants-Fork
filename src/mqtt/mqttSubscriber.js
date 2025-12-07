@@ -1,6 +1,7 @@
 import mqtt from 'mqtt';
 import SpeckCipher from '../encryption/speck.js';
 import 'dotenv/config';
+import { logMetric } from '../utils/metricLogger.js';
 
 class SecureMqttSubscriber {
   constructor(deviceId, sessionKey) {
@@ -68,11 +69,15 @@ class SecureMqttSubscriber {
           const latencyColor = latency < 50 ? '\x1b[32m' : (latency < 200 ? '\x1b[33m' : '\x1b[31m'); // Green < 50ms, Yellow < 200ms, Red > 200ms
 
           console.log(`${latencyColor}⏱️  End-to-End Latency: ${latency}ms\x1b[0m`);
+          const status = latency > 5000 ? 'Attack_Detected' : 'Normal';
+          logMetric('NETWORK', 'E2E_Latency', latency, status);
 
           // Check for message delay(PRevent Replay Attack)
           const allowedDelay = 2000;//2 seconds
           if (Date.now() - decryptedData.timestamp > allowedDelay) {
             console.warn(`\n\x1b[33m⚠️  Warning: Message on ${topic} is delayed by more than ${allowedDelay} ms\x1b[0m`);
+            // [LOG METRIC]
+            logMetric('NETWORK', 'Replay_Attack', latency, 'Blocked');
             return; //ignore delayed message
           }
 

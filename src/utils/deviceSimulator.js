@@ -1,5 +1,7 @@
 import axios from 'axios';
 import SecureMqttClient from '../mqtt/mqttClient.js';
+import { logMetric } from './metricLogger.js';
+
 
 class DeviceSimulator {
   constructor(deviceId, secret, serverUrl = 'http://localhost:3000') {
@@ -71,6 +73,8 @@ class DeviceSimulator {
 
       const totalTime = Date.now() - startTime; // [STOP TIMER]
       console.log(`\x1b[32m✅ Auth Complete in: ${totalTime}ms\x1b[0m`);
+      // [LOG METRIC]
+      logMetric('AUTH', 'Handshake_Time',totalTime, `Device_${this.deviceId}`);
 
       return otkResponse.data;
     } catch (error) {
