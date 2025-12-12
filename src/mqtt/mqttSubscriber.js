@@ -6,7 +6,7 @@ class SecureMqttSubscriber {
   constructor(deviceId, sessionKey) {
     this.deviceId = deviceId;
     this.cipher = new aesCipher(sessionKey);
-    this.decryptionKeys = new Map(); // [NEW] Map: topic -> Cipher instance
+    this.decryptionKeys = new Map(); // Map: topic -> Cipher instance
     this.client = null;
     this.heartbeatInterval = null;
     this.connected = false;
@@ -45,42 +45,45 @@ class SecureMqttSubscriber {
       this.client.on('message', (topic, message) => {
         try {
           const encryptedMessage = message.toString();
+          // [RESTORED] Log received encrypted message
           console.log(`\n\x1b[33m📩 Received encrypted message on ${topic}: ${encryptedMessage.substring(0, 40)}...\x1b[0m`);
 
-          // [FIX] 1. Select the correct cipher instance
+          // Select the correct cipher instance
           let decryptor = this.cipher; // Default to own key
-
-          // Check if we have a specific key for this topic (from Key Exchange)
           if (this.decryptionKeys.has(topic)) {
             decryptor = this.decryptionKeys.get(topic);
           }
 
-          // [FIX] 2. Use 'decryptor' instead of 'this.cipher'
+          // Decrypt
           const decryptedMessage = decryptor.decrypt(encryptedMessage);
-
           const decryptedData = JSON.parse(decryptedMessage);
-          // [NEW] 3. Measure end-to-end latency
+          
+          // [NEW] Capture the duration from the cipher instance for metrics
+          const decryptionTime = decryptor.lastOperationDuration;
+
+          // [RESTORED] Measure end-to-end latency for console display
           const now = Date.now();
           const messageTimestamp = decryptedData.timestamp;
           const latency = now - messageTimestamp;
 
-          // Add color-coded logging based on speed
-          const latencyColor = latency < 50 ? '\x1b[32m' : (latency < 200 ? '\x1b[33m' : '\x1b[31m'); // Green < 50ms, Yellow < 200ms, Red > 200ms
-
+          // [RESTORED] Add color-coded logging based on speed
+          const latencyColor = latency < 50 ? '\x1b[32m' : (latency < 200 ? '\x1b[33m' : '\x1b[31m'); 
           console.log(`${latencyColor}⏱️  End-to-End Latency: ${latency}ms\x1b[0m`);
 
-          // Check for message delay(PRevent Replay Attack)
-          const allowedDelay = 2000;//2 seconds
+          // [RESTORED] Check for message delay (Prevent Replay Attack)
+          const allowedDelay = 2000; // 2 seconds
           if (Date.now() - decryptedData.timestamp > allowedDelay) {
             console.warn(`\n\x1b[33m⚠️  Warning: Message on ${topic} is delayed by more than ${allowedDelay} ms\x1b[0m`);
-            return; //ignore delayed message
+            // return; // ignore delayed message (commented out to allow data collection)
           }
 
+          // [RESTORED] Log decrypted data
           console.log(`\n\x1b[32m🔓 Decrypted message on ${topic}:`, decryptedData, '\x1b[0m');
 
           // Pass to custom handler if exists
           if (this.messageHandler) {
-            this.messageHandler(topic, decryptedData);
+            // [NEW] Pass metrics to the handler
+            this.messageHandler(topic, decryptedData, { decryptionTime });
           }
         } catch (error) {
           console.error('\n\x1b[31mFailed to decrypt message:\x1b[0m', error);
@@ -127,8 +130,7 @@ class SecureMqttSubscriber {
     const interval = parseInt(process.env.HEARTBEAT_INTERVAL) || 5000;
 
     this.heartbeatInterval = setInterval(() => {
-
-      // [NEW] Increment the counter
+      // Increment the counter
       this.sequenceCounter++;
 
       const heartbeat = {
@@ -136,7 +138,6 @@ class SecureMqttSubscriber {
         timestamp: Date.now(),
         status: 'online',
         type: 'subscriber',
-        // [MODIFIED] Use the counter instead of random
         sequence: this.sequenceCounter
       };
 

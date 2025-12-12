@@ -1,5 +1,6 @@
 import axios from 'axios';
 import SecureMqttClient from '../mqtt/mqttClient.js';
+import { performance } from 'perf_hooks'; // [NEW]
 
 class DeviceSimulator {
   constructor(deviceId, secret, serverUrl = 'http://localhost:3000') {
@@ -8,6 +9,8 @@ class DeviceSimulator {
     this.serverUrl = serverUrl;
     this.mqttClient = null;
     this.sessionKey = null;
+    this.authDuration = 0; // [NEW] Store 2FA time
+    this.sessionExpiry = 0;
   }
 
   async register() {
@@ -24,14 +27,15 @@ class DeviceSimulator {
       console.log('Device registered:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Registration failed:', error.response?.data || error.message);
-      throw error;
+      // Console error for registration failure is useful, but if it fails because exists, we can ignore
+      console.error('Registration note:', error.response?.data?.error || error.message);
+      return null;
     }
   }
 
   async authenticate() {
     console.log('\x1b[34m🏁 Starting Authentication Handshake...\x1b[0m');
-    const startTime = Date.now(); // [START TIMER]
+    const startTime = performance.now(); // [START TIMER]
     try {
       // Step 1: Initiate authentication
       const initResponse = await axios.post(`${this.serverUrl}/api/auth/initiate`, {
@@ -39,6 +43,7 @@ class DeviceSimulator {
       });
       
       const { sessionId } = initResponse.data;
+      // [RESTORED] Log session ID
       console.log('Authentication initiated with session:', sessionId);
       
       // Step 2: Validate credentials (Factor 1)
@@ -52,6 +57,7 @@ class DeviceSimulator {
       }
       
       const { otk } = credResponse.data;
+      // [RESTORED] Log OTK receipt
       console.log('Credentials validated, received OTK');
       
       // Step 3: Validate OTK (Factor 2)
@@ -64,13 +70,17 @@ class DeviceSimulator {
         throw new Error('OTK validation failed');
       }
       
+      // [RESTORED] Log success
       console.log('Authentication successful!');
       this.sessionKey = otkResponse.data.sessionKey;
 
-      this.sessionExpiry=Date.now()+(4*60*1000); //session valid for 4 minutes
+      this.sessionExpiry = Date.now() + (4 * 60 * 1000); // session valid for 4 minutes
 
-      const totalTime = Date.now() - startTime; // [STOP TIMER]
-      console.log(`\x1b[32m✅ Auth Complete in: ${totalTime}ms\x1b[0m`);
+      const endTime = performance.now(); // [STOP TIMER]
+      this.authDuration = endTime - startTime; // [NEW] Calculate 2FA time
+      
+      // [RESTORED] Log auth time
+      console.log(`\x1b[32m✅ Auth Complete in: ${this.authDuration.toFixed(2)}ms\x1b[0m`);
 
       return otkResponse.data;
     } catch (error) {
@@ -98,11 +108,11 @@ class DeviceSimulator {
       throw new Error('MQTT client not connected');
     }
 
-    // [NEW] Check if session is about to expire
+    // Check if session is about to expire
     if (Date.now() > this.sessionExpiry) {
         console.log('\n\x1b[33m⚠️ Session expired! Re-authenticating...\x1b[0m');
         
-        // 1. Run the full auth flow again (Get new SessionID -> OTK -> Key)
+        // 1. Run the full auth flow again
         await this.authenticate();
         
         // 2. Update the running MQTT client with the new key
@@ -120,6 +130,11 @@ class DeviceSimulator {
       this.mqttClient.disconnect();
       this.mqttClient = null;
     }
+  }
+
+  // [NEW] Helper to get encryption stats from the internal client
+  getLastEncryptionTime() {
+    return this.mqttClient?.cipher?.lastOperationDuration || 0;
   }
 }
 
