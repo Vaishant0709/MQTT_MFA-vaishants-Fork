@@ -68,8 +68,15 @@ class SecureMqttClient {
       console.log(`\n\x1b[35m📤 Publishing to ${topic}: ${messageStr.substring(0, 40)}...\x1b[0m`);
       console.log(`\n\x1b[33m🔒 Encrypted message: ${encryptedMessage.substring(0, 40)}...\x1b[0m`);
       
-      // Publish the encrypted message
-      this.client.publish(topic, encryptedMessage);
+      // [NEW] SIMULATE REAL-WORLD IOT LATENCY
+      // This adds a 30-60ms delay between "Timestamp Creation" and "Network Transmission"
+      // effectively simulating a 4G/WiFi hop time.
+      const networkDelay = 30 + Math.floor(Math.random() * 30);
+
+      setTimeout(() => {
+        this.client.publish(topic, encryptedMessage);
+      }, networkDelay);
+
       return true;
     } catch (error) {
       console.error('\n\x1b[31mFailed to publish message:\x1b[0m', error);
