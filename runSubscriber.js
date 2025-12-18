@@ -1,16 +1,17 @@
 import SubscriberDevice from './src/utils/subscriberDevice.js';
+import mqtt from 'mqtt'; 
 import 'dotenv/config';
 import readline from 'readline';
 import fs from 'fs';
-import { performance } from 'perf_hooks'; 
+import { performance } from 'perf_hooks';
 
 const DEVICE_ID = `subscriber-${Date.now().toString().slice(-4)}`;
 const SECRET = 'secure-secret-123';
 const LOG_FILE = 'experiment_data.csv';
 
-// [NEW] Updated Headers to include all 5 metrics
+// [UPDATED] Restored headers for Crypto Latency
 if (!fs.existsSync(LOG_FILE)) {
-  const headers = 'Sequence,Timestamp,Latency_EndToEnd,Temp,Pub_2FA_Time,Sub_2FA_Time,Encrypt_Time(Prev),Decrypt_Time\n';
+  const headers = 'Sequence,Timestamp,Latency_EndToEnd,Encrypt_Time,Decrypt_Time,Status\n';
   fs.writeFileSync(LOG_FILE, headers);
   console.log(`\x1b[32m[SYSTEM] Created new log file: ${LOG_FILE}\x1b[0m`);
 }
@@ -27,72 +28,87 @@ async function runSubscriber() {
 
   try {
     await subscriber.register();
-    
-    // Capture Subscriber 2FA time
-    console.log('\x1b[36m[SUBSCRIBER] Authenticating...\x1b[0m');
-    const authStart = performance.now();
     await subscriber.authenticate();
-    const authEnd = performance.now();
-    const subAuthDuration = (authEnd - authStart).toFixed(2);
-    
     await subscriber.connectMqtt();
+
+    // Listen for System Alerts (Brute Force)
+    if (subscriber.mqttClient && subscriber.mqttClient.client) {
+        subscriber.mqttClient.client.subscribe('system/alerts');
+        subscriber.mqttClient.client.on('message', (topic, msg) => {
+            if (topic === 'system/alerts') {
+                console.log(`\x1b[31m🚨 [SYSTEM ALERT] ${msg.toString()}\x1b[0m`);
+                // Log brute force (0 latency, just attack marker)
+                const csvLine = `N/A,${Date.now()},0,0,0,Attack\n`;
+                fs.appendFileSync(LOG_FILE, csvLine);
+            }
+        });
+    }
 
     rl.question('\n\x1b[36mEnter the Publisher ID to listen to: \x1b[0m', async (targetId) => {
       const publisherId = targetId.trim();
-      
-      if (!publisherId) {
-        console.log('\x1b[31mInvalid ID. Exiting.\x1b[0m');
-        process.exit(1);
-      }
+      if (!publisherId) process.exit(1);
 
-      console.log(`\n\x1b[36m[SUBSCRIBER] Requesting Secure Key for: ${publisherId}...\x1b[0m`);
+      console.log(`\n\x1b[36m[SUBSCRIBER] Monitoring ${publisherId}...\x1b[0m`);
       
       try {
         await subscriber.subscribeToDevice(publisherId);
 
-        console.log(`\x1b[33m[LOGGING] Writing detailed metrics to ${LOG_FILE}...\x1b[0m`);
-
-        // Message Handler
         subscriber.setMessageHandler((topic, data, metadata) => {
-          const receiveTime = Date.now();
-          const latency = Math.max(0, receiveTime - data.timestamp);
-          
-          // Extract Metrics
-          const pubAuth = data.metrics?.pubAuthTime || 0;
-          const encryptTime = data.metrics?.prevEncryptTime || 0;
-          const decryptTime = metadata?.decryptionTime?.toFixed(4) || 0;
+            const receiveTime = Date.now();
+            let status = 'Success';
+            let sequence = data?.sequence || 'N/A';
+            
+            // 1. CALCULATE LATENCY (Including for attacks)
+            // Replay attacks will show >2000ms latency here (The "Spike")
+            const latency = Math.max(0, receiveTime - data.timestamp);
+            
+            // 2. EXTRACT CRYPTO METRICS
+            // prevEncryptTime comes from Publisher's payload
+            const encryptTime = data.metrics?.prevEncryptTime || 0;
+            // decryptionTime comes from our local measurement
+            const decryptTime = metadata?.decryptionTime?.toFixed(4) || 0;
 
-          // [RESTORED] Console Log for visibility
-          const latColor = latency < 50 ? '\x1b[32m' : (latency < 100 ? '\x1b[33m' : '\x1b[31m');
-          console.log(
-            `\x1b[36m[DATA]\x1b[0m Seq:${data.sequence} | ` +
-            `Temp:${data.temperature}°C | ` +
-            `${latColor}Lat:${latency}ms\x1b[0m | ` +
-            `Enc:${encryptTime}ms | ` +
-            `Dec:${decryptTime}ms`
-          );
+            // 3. SECURITY CHECKS
+            if (data && (Date.now() - data.timestamp > 2000)) {
+                status = 'Attack'; // Replay detected
+                console.warn(`\x1b[31m[BLOCK] Replay/Old Packet detected. Seq: ${sequence} (Lat: ${latency}ms)\x1b[0m`);
+            }
+            if (data && data.temperature > 100) {
+                status = 'Attack'; // Rogue Data
+            }
 
-          // CSV Log
-          // Format: Seq, Time, Latency, Temp, PubAuth, SubAuth, Encrypt, Decrypt
-          const csvLine = `${data.sequence},${receiveTime},${latency},${data.temperature},` + 
-                          `${pubAuth},${subAuthDuration},${encryptTime},${decryptTime}\n`;
-          
-          try {
+            if (status === 'Success') {
+                console.log(`\x1b[32m[DATA] Seq:${sequence} | Lat:${latency}ms | Enc:${encryptTime}ms | Dec:${decryptTime}ms\x1b[0m`);
+            }
+
+            // LOGGING
+            const csvLine = `${sequence},${receiveTime},${latency},${encryptTime},${decryptTime},${status}\n`;
             fs.appendFileSync(LOG_FILE, csvLine);
-          } catch (err) {
-            console.error('\x1b[31m[ERROR] Failed to write to CSV:\x1b[0m', err.message);
-          }
         });
 
       } catch (err) {
-        console.error(`\x1b[31m[ERROR] Could not subscribe to ${publisherId}: ${err.message}\x1b[0m`);
+        console.error(`Error: ${err.message}`);
       }
     });
 
   } catch (error) {
-    console.error('\x1b[31m[SUBSCRIBER] Critical Error:\x1b[0m', error.message);
+    console.error('Error:', error.message);
     process.exit(1);
   }
 }
+
+// Global Error Interceptor (Tamper Detection)
+const originalError = console.error;
+console.error = function(...args) {
+    const errorMsg = args.toString();
+    if (errorMsg.includes('Decryption failed') || errorMsg.includes('Unsupported state')) {
+        console.log(`\x1b[31m[BLOCK] Tampered Packet Detected\x1b[0m`);
+        // Tampered packets have 0 latency/crypto stats because they failed to decrypt
+        const csvLine = `N/A,${Date.now()},0,0,0,Attack\n`;
+        fs.appendFileSync(LOG_FILE, csvLine);
+        return; 
+    }
+    originalError.apply(console, args);
+};
 
 runSubscriber();
