@@ -9,8 +9,8 @@ const ATTACKS = [
     'attacks/tamper.js',
     'attacks/replay.js',
     'attacks/flood.js',
-    'attacks/rogue.js'
-    // 'attacks/brute.js' // Excluded from random loop as it needs specific ID args usually
+    'attacks/rogue.js',
+    'attacks/brute.js'
 ];
 
 function runRandomAttack() {
